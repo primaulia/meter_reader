@@ -41,5 +41,5 @@
 ## Assumptions
 
 - This solution will assume the data parsed will be in NEM12 format, since the NEM13 format is for a scenario where the meter data is accumulated, which is not relevant considering the SQL table is storing individual meter readings records.
-- Since the sample data given is buggy, I've taken an calculated estimate on what the data should be. You can see the updated data here.
-- Also I've included the sample data given in the reference documentation as fixtures on my unit test specs.
+- Since the sample data given is buggy, I've used the data given in the reference file instead as test data.
+- I assumed that that the interval value unit that we're stored in the DB will all be in kWh since the given database schema doesn't provide additional info for the `consumption` value unit. If the data given is not in kWh, we'll ignore it.
