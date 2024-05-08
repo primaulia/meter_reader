@@ -15,7 +15,9 @@ class MeterReaderMaker
   end
 
   def call
-    data_valid? ? @sql_statements : []
+    raise ArgumentError, "Data is invalid" unless data_valid?
+
+    @sql_statements
   end
 
   private
@@ -37,12 +39,11 @@ class MeterReaderMaker
     parts = line.chomp.split(',')
     interval_date = parts[1]
     consumption_values = parts[2...last_consumption_value_index].map(&:to_f)
-
-    date = Date.parse(interval_date)
-    time = Time.new(date.year, date.month, date.day, 0, 30, 0)
+    time = prepare_timestamp(interval_date)
 
     consumption_values.each do |value|
       timestamp = time.strftime("%Y-%m-%d %H:%M")
+      value = convert_to_kwh(value) if @consumption_unit != 'kWh'
 
       @sql_statements << "INSERT INTO meter_readings ('nmi', 'timestamp', 'consumption') VALUES ('#{@current_nmi}', '#{timestamp}', #{value});"
 
@@ -61,11 +62,23 @@ class MeterReaderMaker
 
   # only process line if it passes this condition
   def can_process_line?(line)
-    line.start_with?('300') && @current_nmi && @consumption_unit == 'kWh'
+    line.start_with?('300') && @current_nmi && @consumption_unit.include?('Wh')
   end
 
   def last_consumption_value_index
     (1440 / @interval_length) + 2
+  end
+
+  def convert_to_kwh(value)
+    case @consumption_unit
+    when 'MWh' then value * 1000
+    when 'Wh' then value.to_f / 1000
+    end
+  end
+
+  def prepare_timestamp(interval_date)
+    date = Date.parse(interval_date)
+    Time.new(date.year, date.month, date.day, 0, @interval_length, 0) # the initial timestamp will be at the end of the interval length
   end
 end
 
