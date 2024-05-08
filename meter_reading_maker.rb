@@ -9,6 +9,7 @@ class MeterReaderMaker
     @current_nmi = ""
     @sql_statements = []
     @consumption_unit = ""
+    @consumption_data = {}
     @file_validator = %w[900 100] # works like a stack. the file is valid if it starts with 100 record and ends with 900 record
 
     parse_file
@@ -33,21 +34,32 @@ class MeterReaderMaker
 
       update_consumption_values(line) if can_process_line?(line)
     end
+
+    prepare_sql_statements
   end
 
   def update_consumption_values(line)
     parts = line.chomp.split(',')
     interval_date = parts[1]
     consumption_values = parts[2...last_consumption_value_index].map(&:to_f)
-    time = prepare_timestamp(interval_date)
 
-    consumption_values.each do |value|
-      timestamp = time.strftime("%Y-%m-%d %H:%M")
-      value = convert_to_kwh(value) if @consumption_unit != 'kWh'
 
-      @sql_statements << "INSERT INTO meter_readings ('nmi', 'timestamp', 'consumption') VALUES ('#{@current_nmi}', '#{timestamp}', #{value});"
+    @consumption_data[@current_nmi] ||= {}
+    @consumption_data[@current_nmi][interval_date] ||= []
+    @consumption_data[@current_nmi][interval_date] << consumption_values
+  end
 
-      time += @interval_length * 60
+  def prepare_sql_statements
+    @consumption_data[@current_nmi].each do |interval_date, consumption_values|
+      time = prepare_timestamp(interval_date)
+      summed_values = consumption_values.transpose.map { |sub_array| sub_array.sum }
+      summed_values.each do |value|
+        timestamp = time.strftime("%Y-%m-%d %H:%M")
+        value = convert_to_kwh(value) if @consumption_unit != 'kWh'
+        @sql_statements << "INSERT INTO meter_readings ('nmi', 'timestamp', 'consumption') VALUES ('#{@current_nmi}', '#{timestamp}', #{value});"
+
+        time += @interval_length * 60
+      end
     end
   end
 
