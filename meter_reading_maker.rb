@@ -44,7 +44,7 @@ class MeterReaderMaker
     consumption_values.each do |value|
       timestamp = time.strftime("%Y-%m-%d %H:%M")
 
-      @sql_statements << "INSERT INTO meter_readings (nmi, timestamp, consumption) VALUES ('#{@current_nmi}', '#{timestamp}', #{value});"
+      @sql_statements << "INSERT INTO meter_readings ('nmi', 'timestamp', 'consumption') VALUES ('#{@current_nmi}', '#{timestamp}', #{value});"
 
       time += 30 * 60
     end
