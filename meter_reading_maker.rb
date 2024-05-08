@@ -2,7 +2,7 @@ require 'csv'
 require 'pry-byebug'
 
 class MeterReaderMaker
-  NMI_PATTERN = /^200,(\w+)(,.*?){5},(\w+),.*$/
+  NMI_PATTERN = /^200,(\w+)(,.*?){5},(\w+),(\d+),$/
 
   def initialize(filepath)
     @filepath = filepath
@@ -15,18 +15,18 @@ class MeterReaderMaker
   end
 
   def call
-    @sql_statements if data_valid?
+    data_valid? ? @sql_statements : []
   end
 
   private
 
   def parse_file
     File.read(@filepath).each_line do |line|
-      validate(line) if line.start_with?('100') || if line.start_with?('900')
+      validate(line) if line.start_with?('100') || line.start_with?('900')
 
       if line.start_with?('200')
-        @current_nmi = line.match(NMI_PATTERN)[1]
-        @consumption_unit = line.match(NMI_PATTERN)[3]
+        @current_nmi, _, @consumption_unit, @interval_length = line.match(NMI_PATTERN).captures
+        @interval_length = @interval_length.to_i
       end
 
       update_consumption_values(line) if can_process_line?(line)
@@ -36,7 +36,7 @@ class MeterReaderMaker
   def update_consumption_values(line)
     parts = line.chomp.split(',')
     interval_date = parts[1]
-    consumption_values = parts[2...50].map(&:to_f)
+    consumption_values = parts[2...last_consumption_value_index].map(&:to_f)
 
     date = Date.parse(interval_date)
     time = Time.new(date.year, date.month, date.day, 0, 30, 0)
@@ -46,7 +46,7 @@ class MeterReaderMaker
 
       @sql_statements << "INSERT INTO meter_readings ('nmi', 'timestamp', 'consumption') VALUES ('#{@current_nmi}', '#{timestamp}', #{value});"
 
-      time += 30 * 60
+      time += @interval_length * 60
     end
   end
 
@@ -62,6 +62,10 @@ class MeterReaderMaker
   # only process line if it passes this condition
   def can_process_line?(line)
     line.start_with?('300') && @current_nmi && @consumption_unit == 'kWh'
+  end
+
+  def last_consumption_value_index
+    (1440 / @interval_length) + 2
   end
 end
 
