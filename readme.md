@@ -44,5 +44,6 @@
 - Since the sample data given is buggy, I've used the data given in the reference file instead as test data.
 - I assumed that that the interval value unit that we're stored in the DB will all be in kWh since the given database schema doesn't provide additional info for the `consumption` value unit. If the data given is not in kWh, we'll ignore it. Also as I'm aware, the kWh is a unit that determines the "active" consumption of the electricity.
 - If the value given is in Wh or MWh, the solution will convert it to kWh format.
-- I assumed that the interval length will always be given and never be null, as I expect to calculate the amount of interval value to be taken from the 300 records based on the interval length.
-- If the same NMI data has multiple export interval value and it was recorded on the same day, I assumed that the data will be merged together
+- I assumed that the interval length is mandatory, based on the reference documentation
+- If the same NMI data has multiple export interval value and it was recorded on the same day, I assumed that the data will be summed together
+- If the 200 records provided an import interval data (i.e. NMI Suffix that's not `E1` or `E2`), I assumed that it's irrelevant data because it's not an active consumption data

@@ -2,7 +2,7 @@ require 'csv'
 require 'pry-byebug'
 
 class MeterReaderMaker
-  NMI_PATTERN = /^200,(\w+)(,.*?){5},(\w+),(\d+),$/
+  NMI_PATTERN = /^200,(?<nmi>\w+),\w+,(\w+)?,(?<nmi_suffix>\w+),(\w+)?,\w+,(?<consumption_unit>\w+),(?<interval_length>\d+),(\w+)?$/
 
   def initialize(filepath)
     @filepath = filepath
@@ -28,8 +28,11 @@ class MeterReaderMaker
       validate(line) if line.start_with?('100') || line.start_with?('900')
 
       if line.start_with?('200')
-        @current_nmi, _, @consumption_unit, @interval_length = line.match(NMI_PATTERN).captures
-        @interval_length = @interval_length.to_i
+        match_groups = line.match(NMI_PATTERN)
+        @current_nmi = match_groups[:nmi]
+        @consumption_unit = match_groups[:consumption_unit].downcase
+        @interval_length = match_groups[:interval_length].to_i # 5, 15, 30 minutes
+        @suffix = match_groups[:nmi_suffix].downcase
       end
 
       update_consumption_values(line) if can_process_line?(line)
@@ -41,8 +44,7 @@ class MeterReaderMaker
   def update_consumption_values(line)
     parts = line.chomp.split(',')
     interval_date = parts[1]
-    consumption_values = parts[2...last_consumption_value_index].map(&:to_f)
-
+    consumption_values = parts[2...last_interval_index].map(&:to_f)
 
     @consumption_data[@current_nmi] ||= {}
     @consumption_data[@current_nmi][interval_date] ||= []
@@ -55,7 +57,7 @@ class MeterReaderMaker
       summed_values = consumption_values.transpose.map { |sub_array| sub_array.sum }
       summed_values.each do |value|
         timestamp = time.strftime("%Y-%m-%d %H:%M")
-        value = convert_to_kwh(value) if @consumption_unit != 'kWh'
+        value = convert_to_kwh(value) if @consumption_unit != 'kwh'
         @sql_statements << "INSERT INTO meter_readings ('nmi', 'timestamp', 'consumption') VALUES ('#{@current_nmi}', '#{timestamp}', #{value});"
 
         time += @interval_length * 60
@@ -73,11 +75,15 @@ class MeterReaderMaker
   end
 
   # only process line if it passes this condition
+  # - is a 300 record
+  # - have @current_nmi state, set up
+  # - the unit we worked with is in Watt Hour format (active consumption)
+  # - export data only
   def can_process_line?(line)
-    line.start_with?('300') && @current_nmi && @consumption_unit.include?('Wh')
+    line.start_with?('300') && @current_nmi && @consumption_unit.include?('wh') && @suffix.include?("e")
   end
 
-  def last_consumption_value_index
+  def last_interval_index
     (1440 / @interval_length) + 2
   end
 
