@@ -26,19 +26,19 @@ class MeterReaderMaker
   def parse_file
     File.read(@filepath).each_line do |line|
       validate(line) if line.start_with?('100') || line.start_with?('900')
-
-      if line.start_with?('200')
-        match_groups = line.match(NMI_PATTERN)
-        @current_nmi = match_groups[:nmi]
-        @consumption_unit = match_groups[:consumption_unit].downcase
-        @interval_length = match_groups[:interval_length].to_i # 5, 15, 30 minutes
-        @suffix = match_groups[:nmi_suffix].downcase
-      end
-
+      process_nmi_record(line) if line.start_with?('200')
       update_consumption_values(line) if can_process_line?(line)
     end
 
     prepare_sql_statements
+  end
+
+  def process_nmi_record(line)
+    match_groups = line.match(NMI_PATTERN)
+    @current_nmi = match_groups[:nmi]
+    @consumption_unit = match_groups[:consumption_unit].downcase
+    @interval_length = match_groups[:interval_length].to_i # 5, 15, 30 minutes
+    @suffix = match_groups[:nmi_suffix].downcase
   end
 
   def update_consumption_values(line)
