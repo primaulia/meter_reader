@@ -48,19 +48,27 @@ class MeterReaderMaker
     @sql_statements[@current_nmi] ||= []
 
     if @sql_statements[@current_nmi].empty?
-      @sql_statements[@current_nmi] = consumption_values.map do |value|
-        statement = "INSERT INTO meter_readings ('nmi', 'timestamp', 'consumption') VALUES ('#{@current_nmi}', '#{time}', #{value});"
-        time += @interval_length * 60
-        statement
-      end
+      @sql_statements[@current_nmi] = transform_values_to_statements(consumption_values, time)
     else
-      @sql_statements[@current_nmi] = @sql_statements[@current_nmi].map.with_index do |statement, index|
-        pattern = /,\s(\d+\.?\d*)/
-        inserted_value = statement.match(pattern)[1].to_f
-        new_value = inserted_value + consumption_values[index]
-        statement = statement.gsub(pattern, ", #{new_value}")
-        statement
-      end
+      @sql_statements[@current_nmi] = merge_values_to_existing_statements(consumption_values)
+    end
+  end
+
+  def transform_values_to_statements(consumption_values, time)
+    consumption_values.map do |value|
+      statement = "INSERT INTO meter_readings ('nmi', 'timestamp', 'consumption') VALUES ('#{@current_nmi}', '#{time}', #{value});"
+      time += @interval_length * 60
+      statement
+    end
+  end
+
+  def merge_values_to_existing_statements(consumption_values)
+    @sql_statements[@current_nmi].map.with_index do |statement, index|
+      pattern = /,\s(\d+\.?\d*)/
+      inserted_value = statement.match(pattern)[1].to_f
+      new_value = inserted_value + consumption_values[index]
+      statement = statement.gsub(pattern, ", #{new_value}")
+      statement
     end
   end
 
