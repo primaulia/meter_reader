@@ -47,17 +47,20 @@ class MeterReaderMaker
     consumption_values = parts[2...last_interval_index].map(&:to_f)
 
     @consumption_data[@current_nmi] ||= {}
-    @consumption_data[@current_nmi][interval_date] ||= []
-    @consumption_data[@current_nmi][interval_date] << consumption_values
+    @consumption_data[@current_nmi][interval_date] ||= {}
+    @consumption_data[@current_nmi][interval_date][:values] ||= []
+    @consumption_data[@current_nmi][interval_date][:values] << consumption_values
+    @consumption_data[@current_nmi][interval_date][:unit] = @consumption_unit
   end
 
   def prepare_sql_statements
-    @consumption_data[@current_nmi].each do |interval_date, consumption_values|
+    current_consumption = @consumption_data[@current_nmi]
+    current_consumption.each do |interval_date, data|
       time = prepare_timestamp(interval_date)
-      summed_values = consumption_values.transpose.map { |sub_array| sub_array.sum }
+      summed_values = data[:values].transpose.map { |sub_array| sub_array.sum }
       summed_values.each do |value|
         timestamp = time.strftime("%Y-%m-%d %H:%M")
-        value = convert_to_kwh(value) if @consumption_unit != 'kwh'
+        value = convert_to_kwh(value) if data[:unit] != 'kwh'
         @sql_statements << "INSERT INTO meter_readings ('nmi', 'timestamp', 'consumption') VALUES ('#{@current_nmi}', '#{timestamp}', #{value});"
 
         time += @interval_length * 60
