@@ -29,7 +29,7 @@ class MeterReaderMaker
       process_interval_records(line) if can_process_line?(line)
     end
 
-    merge_sql_statements
+    flattened_sql_statements
   end
 
   def process_nmi_record(line)
@@ -72,7 +72,7 @@ class MeterReaderMaker
     end
   end
 
-  def merge_sql_statements
+  def flattened_sql_statements
     flattened_array = []
     @sql_statements.each_value do |value|
       flattened_array.concat(value.flatten)
