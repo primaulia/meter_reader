@@ -7,7 +7,7 @@ class MeterReaderMaker
   def initialize(filepath)
     @filepath = filepath
     @current_nmi = ""
-    @sql_statements = {}
+    @sql_statements_by_nmi = {}
     @consumption_unit = ""
     @file_validator = %w[900 100] # works like a stack. the file is valid if it starts with 100 record and ends with 900 record
 
@@ -17,7 +17,7 @@ class MeterReaderMaker
   def call
     raise ArgumentError, "Data is invalid" unless data_valid?
 
-    @sql_statements
+    flattened_sql_statements
   end
 
   private
@@ -26,10 +26,8 @@ class MeterReaderMaker
     File.read(@filepath).each_line do |line|
       validate(line) if line.start_with?('100') || line.start_with?('900')
       process_nmi_record(line) if line.start_with?('200')
-      process_interval_records(line) if can_process_line?(line)
+      process_interval_records(line) if can_process_interval_record?(line)
     end
-
-    flattened_sql_statements
   end
 
   def process_nmi_record(line)
@@ -45,12 +43,12 @@ class MeterReaderMaker
     time = prepare_timestamp(parts[1])
     consumption_values = parts[2...last_interval_index].map(&:to_f)
 
-    @sql_statements[@current_nmi] ||= []
+    @sql_statements_by_nmi[@current_nmi] ||= []
 
-    if @sql_statements[@current_nmi].empty?
-      @sql_statements[@current_nmi] = transform_values_to_statements(consumption_values, time)
+    if @sql_statements_by_nmi[@current_nmi].empty?
+      @sql_statements_by_nmi[@current_nmi] = transform_values_to_statements(consumption_values, time)
     else
-      @sql_statements[@current_nmi] = merge_values_to_existing_statements(consumption_values)
+      @sql_statements_by_nmi[@current_nmi] = merge_values_to_existing_statements(consumption_values)
     end
   end
 
@@ -63,7 +61,7 @@ class MeterReaderMaker
   end
 
   def merge_values_to_existing_statements(consumption_values)
-    @sql_statements[@current_nmi].map.with_index do |statement, index|
+    @sql_statements_by_nmi[@current_nmi].map.with_index do |statement, index|
       pattern = /,\s(\d+\.?\d*)/
       inserted_value = statement.match(pattern)[1].to_f
       new_value = inserted_value + consumption_values[index]
@@ -73,11 +71,7 @@ class MeterReaderMaker
   end
 
   def flattened_sql_statements
-    flattened_array = []
-    @sql_statements.each_value do |value|
-      flattened_array.concat(value.flatten)
-    end
-    @sql_statements = flattened_array
+    @sql_statements_by_nmi.values.flatten
   end
 
   def validate(line)
@@ -94,7 +88,7 @@ class MeterReaderMaker
   # - have @current_nmi state, set up
   # - the unit we worked with is in Watt Hour format (active consumption)
   # - export data only (nmi suffix E1 or E2)
-  def can_process_line?(line)
+  def can_process_interval_record?(line)
     line.start_with?('300') && @current_nmi && @consumption_unit.include?('wh') && @suffix.include?("e")
   end
 
