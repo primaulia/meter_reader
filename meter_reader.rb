@@ -9,12 +9,13 @@ class MeterReader
     @current_meter = {}
     @sql_statements_by_nmi = {}
     @file_validator = %w[900 100] # works like a stack. the file is valid if it starts with 100 record and ends with 900 record
+    @record_valid = true
 
     parse_file
   end
 
   def call
-    raise ArgumentError, "Data is invalid" unless data_valid?
+    raise ArgumentError, "Data is invalid" unless file_valid?
 
     flattened_sql_statements
   end
@@ -40,10 +41,14 @@ class MeterReader
   end
 
   def process_interval_records(line)
+    unless valid_record?(line)
+      @record_valid = false
+      return
+    end
+
     parts = line.chomp.split(',')
     time = prepare_timestamp(parts[1])
     consumption_values = parts[2...last_interval_index].map(&:to_f)
-
     @sql_statements_by_nmi[current_nmi] ||= []
 
     if @sql_statements_by_nmi[current_nmi].empty?
@@ -80,8 +85,16 @@ class MeterReader
     @file_validator.pop if line.start_with?('900') && @file_validator.last == '900'
   end
 
-  def data_valid?
-    @file_validator.empty?
+  def file_valid?
+    @file_validator.empty? && @record_valid
+  end
+
+  def valid_record_size
+    1440 / current_interval_length
+  end
+
+  def valid_record?(record)
+    record.match?(/^300,(\d+)(,\d+\.?\d*){#{valid_record_size}},.*$/)
   end
 
   def current_nmi
@@ -110,7 +123,7 @@ class MeterReader
   end
 
   def last_interval_index
-    (1440 / current_interval_length) + 2
+    valid_record_size + 2
   end
 
   def convert_to_kwh(value)
