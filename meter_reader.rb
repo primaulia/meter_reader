@@ -149,6 +149,6 @@ class MeterReader
   end
 end
 
-statements = MeterReader.new("./fixtures/sample5.csv").call
+statements = MeterReader.new("./fixtures/sample4.csv").call
 binding.pry
 p statements
