@@ -148,7 +148,3 @@ class MeterReader
     Time.new(date.year, date.month, date.day, 0, current_interval_length, 0) # the initial timestamp will be at the end of the interval length
   end
 end
-
-statements = MeterReader.new("./fixtures/sample4.csv").call
-binding.pry
-p statements
