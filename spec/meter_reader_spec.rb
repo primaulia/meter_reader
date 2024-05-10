@@ -13,6 +13,15 @@ describe MeterReader do
       allow(instance).to receive(:current_consumption_unit).and_return('wh')
       expect(instance.send(:convert_to_kwh, 1)).to eq(0.001)
     end
+
+    it "should raise ArgumentError if the value is not an integer" do
+      expect{ instance.send(:convert_to_kwh, "test") }.to raise_error(ArgumentError)
+    end
+
+    it "should raise a StandardError if the current_consumption_unit does not exist yet" do
+      allow(instance).to receive(:current_consumption_unit).and_return('dwh')
+      expect{ instance.send(:convert_to_kwh, 1) }.to raise_error(StandardError)
+    end
   end
 
   describe "__prepare_timestamp" do

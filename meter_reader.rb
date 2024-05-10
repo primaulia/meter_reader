@@ -133,9 +133,14 @@ class MeterReader
   end
 
   def convert_to_kwh(value)
+    raise ArgumentError if value.class != Integer
+
     case current_consumption_unit
     when 'mwh' then value * 1000
     when 'wh' then value.to_f / 1000
+    when 'kwh' then value
+    else
+      raise StandardError, 'Invalid unit of measurement'
     end
   end
 
