@@ -24,6 +24,7 @@ class MeterReader
 
   def parse_file
     File.read(@filepath).each_line do |line|
+      line = line.strip
       validate(line) if line.start_with?('100') || line.start_with?('900')
       process_nmi_record(line) if line.start_with?('200')
       process_interval_records(line) if can_process_interval_record?(line)
@@ -32,6 +33,7 @@ class MeterReader
 
   def process_nmi_record(line)
     match_groups = line.match(NMI_PATTERN)
+    binding.pry if match_groups.nil?
     @current_meter = {
       nmi: match_groups[:nmi],
       unit: match_groups[:current_consumption_unit].downcase,
@@ -49,12 +51,20 @@ class MeterReader
     parts = line.chomp.split(',')
     time = prepare_timestamp(parts[1])
     consumption_values = parts[2...last_interval_index].map(&:to_f)
-    @sql_statements_by_nmi[current_nmi] ||= []
+    prepare_sql_statements(consumption_values, time)
+  end
+
+  def prepare_sql_statements(consumption_values, time)
+    @sql_statements_by_nmi[current_nmi] ||= {}
 
     if @sql_statements_by_nmi[current_nmi].empty?
-      @sql_statements_by_nmi[current_nmi] = transform_values_to_statements(consumption_values, time)
+      @sql_statements_by_nmi[current_nmi][time] = transform_values_to_statements(consumption_values, time)
     else
-      @sql_statements_by_nmi[current_nmi] = merge_values_to_existing_statements(consumption_values)
+      if @sql_statements_by_nmi[current_nmi][time].nil?
+        @sql_statements_by_nmi[current_nmi][time] = transform_values_to_statements(consumption_values, time)
+      else
+        @sql_statements_by_nmi[current_nmi][time] = merge_values_to_existing_statements(consumption_values, time)
+      end
     end
   end
 
@@ -66,8 +76,8 @@ class MeterReader
     end
   end
 
-  def merge_values_to_existing_statements(consumption_values)
-    @sql_statements_by_nmi[current_nmi].map.with_index do |statement, index|
+  def merge_values_to_existing_statements(consumption_values, time)
+    @sql_statements_by_nmi[current_nmi][time].map.with_index do |statement, index|
       pattern = /,\s(\d+\.?\d*)/
       inserted_value = statement.match(pattern)[1].to_f
       new_value = inserted_value + consumption_values[index] # assumed that each repeated NMI data will have the same interval length
@@ -77,7 +87,7 @@ class MeterReader
   end
 
   def flattened_sql_statements
-    @sql_statements_by_nmi.values.flatten
+    @sql_statements_by_nmi.values.flat_map(&:values).flatten
   end
 
   def validate(line)
@@ -139,6 +149,6 @@ class MeterReader
   end
 end
 
-statements = MeterReader.new("./fixtures/sample1.csv").call
+statements = MeterReader.new("./fixtures/sample2.csv").call
 binding.pry
 p statements
