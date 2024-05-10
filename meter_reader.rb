@@ -57,14 +57,10 @@ class MeterReader
   def prepare_sql_statements(consumption_values, time)
     @sql_statements_by_nmi[current_nmi] ||= {}
 
-    if @sql_statements_by_nmi[current_nmi].empty?
+    if @sql_statements_by_nmi[current_nmi].empty? || @sql_statements_by_nmi[current_nmi][time].nil?
       @sql_statements_by_nmi[current_nmi][time] = transform_values_to_statements(consumption_values, time)
     else
-      if @sql_statements_by_nmi[current_nmi][time].nil?
-        @sql_statements_by_nmi[current_nmi][time] = transform_values_to_statements(consumption_values, time)
-      else
-        @sql_statements_by_nmi[current_nmi][time] = merge_values_to_existing_statements(consumption_values, time)
-      end
+      @sql_statements_by_nmi[current_nmi][time] = merge_values_to_existing_statements(consumption_values, time)
     end
   end
 
