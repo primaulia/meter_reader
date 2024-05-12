@@ -157,6 +157,7 @@ class MeterReader
   end
 end
 
+# HOW TO TEST - uncomment the line below to test
 # statements = MeterReader.new('fixtures/sample1.csv').call
 # binding.pry
 # p statements
