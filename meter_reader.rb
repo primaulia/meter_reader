@@ -126,7 +126,7 @@ class MeterReader
   end
 
   def last_interval_index
-    ≈ + 2
+    valid_record_size + 2
   end
 
   def convert_to_kwh(value)
