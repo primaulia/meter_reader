@@ -124,7 +124,7 @@ describe MeterReader do
     describe "#call" do
       let(:instance) { described_class.new('fixtures/sample3.csv') }
 
-      it "should return 7 days worth insert statements" do
+      it "should return 7 days worth of insert statements" do
         expect(instance.call.size).to eq(336)
       end
 
@@ -162,7 +162,7 @@ describe MeterReader do
     describe "#call" do
       let(:instance) { described_class.new('fixtures/sample6.csv') }
 
-      it "should return 3 days worth insert statements" do
+      it "should return 3 days worth of insert statements" do
         expect(instance.call.size).to eq(144)
       end
 
@@ -173,6 +173,25 @@ describe MeterReader do
         expect(first_timestamp.to_s).to eq('2004-08-09')
         expect(last_timestamp.to_s).to eq('2004-08-12')
         expect((last_timestamp - first_timestamp).to_i).to eq(3)
+      end
+    end
+  end
+
+  context "sample 9 (1 NMIs, multiple 300 records, 5 mins interval, 1 kWh meter readings, 20220201)" do
+    describe "#call" do
+      let(:instance) { described_class.new('fixtures/sample9.csv') }
+
+      it "should a day worth of insert statements" do
+        expect(instance.call.size).to eq(288)
+      end
+
+      it "should return meter readings within a day" do
+        statements = instance.call
+        first_timestamp = extract_timestamps_from_statement(statements.first)
+        last_timestamp = extract_timestamps_from_statement(statements.last)
+        expect(first_timestamp.to_s).to eq('2022-02-01')
+        expect(last_timestamp.to_s).to eq('2022-02-02')
+        expect((last_timestamp - first_timestamp).to_i).to eq(1)
       end
     end
   end
