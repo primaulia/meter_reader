@@ -26,7 +26,10 @@ class MeterReader
       line = line.strip
       validate(line) if line.start_with?('100') || line.start_with?('900')
       @current_meter = process_nmi_record(line) if line.start_with?('200')
-      process_interval_records(line) if can_process_interval_record?(line)
+
+      if can_process_interval_record?(line)
+        interval_record = process_interval_record(line)
+      end
     end
   end
 
@@ -42,13 +45,16 @@ class MeterReader
     }
   end
 
-  def process_interval_records(line)
+  def process_interval_record(line)
     raise ArgumentError, "NMI 300 record is invalid" unless valid_record?(line)
 
     parts = line.chomp.split(',')
     time = prepare_timestamp(parts[1])
     consumption_values = parts[2...last_interval_index].map(&:to_f)
-    prepare_sql_statements(consumption_values, time)
+    {
+      consumption_values:,
+      time:
+    }
   end
 
   def prepare_sql_statements(consumption_values, time)

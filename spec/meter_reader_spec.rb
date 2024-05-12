@@ -64,7 +64,18 @@ describe MeterReader do
 
     it "should raise ArgumentError if the 300 record given is invalid" do
       invalid_line = "lorem ipsum"
-      expect { instance.send(:process_interval_records, invalid_line) }.to raise_error(ArgumentError)
+      expect { instance.send(:process_interval_record, invalid_line) }.to raise_error(ArgumentError)
+    end
+
+    it "should provided the essential interval record if the data is valid" do
+      valid_line = "300,20040201,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,1.1112,A,,,20040202120025,20040202142516"
+
+      allow(instance).to receive(:current_interval_length).and_return(30)
+      result = instance.send(:process_interval_record, valid_line)
+      expect(result.keys).to match_array(%i[consumption_values time])
+      expect(result[:consumption_values].length).to eq(48)
+      expect(result[:time].class).to eq(Time)
+      expect(result[:time]).to eq(instance.send(:prepare_timestamp, '20040201'))
     end
   end
 end
