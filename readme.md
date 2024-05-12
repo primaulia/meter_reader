@@ -15,7 +15,7 @@ This is a solution to [this challenge](https://docs.google.com/document/d/1eb8bW
 ## Usage
 
 - I've provided some sample data in the `fixtures` folder in this repo. Please feel free to use it to test the solution. These sample data are all taken from the reference documentation.
-- I've also provided some rspec tests to validate my solution.
+- I've also provided some rspec tests to validate my solution. To run the unit tests just type `rspec` in the terminal
 - Practically this is how you will run the solution
   ```
   csv_file = File.read("sample.csv") # create or prepare this CSV file first
