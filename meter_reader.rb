@@ -29,6 +29,7 @@ class MeterReader
 
       if can_process_interval_record?(line)
         interval_record = process_interval_record(line)
+        prepare_sql_statements(interval_record)
       end
     end
   end
@@ -57,7 +58,9 @@ class MeterReader
     }
   end
 
-  def prepare_sql_statements(consumption_values, time)
+  def prepare_sql_statements(interval_record)
+    consumption_values = interval_record[:consumption_values]
+    time = interval_record[:time]
     @sql_statements_by_nmi[current_nmi] ||= {}
 
     if @sql_statements_by_nmi[current_nmi].empty? || @sql_statements_by_nmi[current_nmi][time].nil?
