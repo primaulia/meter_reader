@@ -6,6 +6,18 @@ describe MeterReader do
     Date.parse(statement.match(timestamp_pattern)[1])
   end
 
+  context "sample 0 (invalid interval records)" do
+    describe "#call" do
+      let(:instance_1) { described_class.new('fixtures/given_data.csv') }
+      let(:instance_2) { described_class.new('fixtures/sample1_invalid.csv') }
+
+      it "should raise a StandardError" do
+        expect { instance_1.call }.to raise_error(StandardError)
+        expect { instance_2.call }.to raise_error(StandardError)
+      end
+    end
+  end
+
   context "sample 1 (1 NMI, multiple 300 records, 30 mins interval, 1 kWh meter reading, 2004-02-01)" do
     describe "#call" do
       let(:instance) { described_class.new('fixtures/sample1.csv') }

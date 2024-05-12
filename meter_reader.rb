@@ -14,7 +14,7 @@ class MeterReader
   end
 
   def call
-    raise ArgumentError, "Data is invalid" unless file_valid?
+    raise StandardError, "Data is invalid" unless file_valid?
 
     flattened_sql_statements
   end
@@ -50,11 +50,10 @@ class MeterReader
     raise ArgumentError, "NMI 300 record is invalid" unless valid_record?(line)
 
     parts = line.chomp.split(',')
-    time = prepare_timestamp(parts[1])
-    consumption_values = parts[2...last_interval_index].map(&:to_f)
+
     {
-      consumption_values:,
-      time:
+      time: prepare_timestamp(parts[1]),
+      consumption_values: parts[2...last_interval_index].map(&:to_f)
     }
   end
 
