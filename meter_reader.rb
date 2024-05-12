@@ -9,7 +9,6 @@ class MeterReader
     @current_meter = {}
     @sql_statements_by_nmi = {}
     @file_validator = %w[900 100] # works like a stack. the file is valid if it starts with 100 record and ends with 900 record
-    @record_valid = true
 
     parse_file
   end
@@ -44,10 +43,7 @@ class MeterReader
   end
 
   def process_interval_records(line)
-    unless valid_record?(line)
-      @record_valid = false
-      return
-    end
+    raise ArgumentError, "NMI 300 record is invalid" unless valid_record?(line)
 
     parts = line.chomp.split(',')
     time = prepare_timestamp(parts[1])
@@ -93,7 +89,7 @@ class MeterReader
   end
 
   def file_valid?
-    @file_validator.empty? && @record_valid
+    @file_validator.empty?
   end
 
   def valid_record_size

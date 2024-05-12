@@ -53,9 +53,18 @@ describe MeterReader do
       })
     end
 
-    it "should raise ArgumentError if the line is invalid" do
+    it "should raise ArgumentError if the 200 record given  is invalid" do
       invalid_line = "lorem ipsum"
       expect { instance.send(:process_nmi_record, invalid_line) }.to raise_error(ArgumentError)
+    end
+  end
+
+  describe "__process_interval_records" do
+    let(:instance) { described_class.new('fixtures/sample1.csv') }
+
+    it "should raise ArgumentError if the 300 record given is invalid" do
+      invalid_line = "lorem ipsum"
+      expect { instance.send(:process_interval_records, invalid_line) }.to raise_error(ArgumentError)
     end
   end
 end
