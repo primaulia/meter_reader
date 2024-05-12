@@ -25,7 +25,7 @@ class MeterReader
     File.read(@filepath).each_line do |line|
       line = line.strip
       validate(line) if line.start_with?('100') || line.start_with?('900')
-      process_nmi_record(line) if line.start_with?('200')
+      @current_meter = process_nmi_record(line) if line.start_with?('200')
       process_interval_records(line) if can_process_interval_record?(line)
     end
   end
@@ -34,7 +34,7 @@ class MeterReader
     match_groups = line.match(NMI_PATTERN)
     raise ArgumentError, "NMI 200 record is invalid" if match_groups.nil?
 
-    @current_meter = {
+    {
       nmi: match_groups[:nmi],
       unit: match_groups[:current_consumption_unit].downcase,
       interval_length: match_groups[:interval_length].to_i,
@@ -126,7 +126,7 @@ class MeterReader
   end
 
   def last_interval_index
-    valid_record_size + 2
+    ≈ + 2
   end
 
   def convert_to_kwh(value)
@@ -146,3 +146,7 @@ class MeterReader
     Time.new(date.year, date.month, date.day, 0, current_interval_length, 0) # the initial timestamp will be at the end of the interval length
   end
 end
+
+# statements = MeterReader.new('fixtures/sample1.csv').call
+# binding.pry
+# p statements

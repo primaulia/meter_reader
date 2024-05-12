@@ -40,7 +40,7 @@ describe MeterReader do
   describe "__process_nmi_record" do
     let(:instance) { described_class.new('fixtures/sample1.csv') }
 
-    it "should derived the current meter state according the given line" do
+    it "should derive the current meter state according the given line" do
       valid_line = "200,VABD000163,E1Q1,1,E1,N1,METSER123,kWh,30,"
       result = instance.send(:process_nmi_record, valid_line)
 
@@ -53,7 +53,7 @@ describe MeterReader do
       })
     end
 
-    it "should raise ArgumentError if the 200 record given  is invalid" do
+    it "should raise ArgumentError if the 200 record given is invalid" do
       invalid_line = "lorem ipsum"
       expect { instance.send(:process_nmi_record, invalid_line) }.to raise_error(ArgumentError)
     end
