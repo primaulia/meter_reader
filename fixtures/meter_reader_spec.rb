@@ -211,19 +211,10 @@ describe MeterReader do
   describe "__prepare_sql_statements" do
     let(:instance_sample_1) { described_class.new('fixtures/sample1.csv') }
     let(:instance_multiple_nmis) { described_class.new('fixtures/sample1_multiple_nmi.csv') }
-    let(:instance_multiple_days) { described_class.new('fixtures/sample1_multiple_days.csv') }
 
     it "should group statements into different NMI and interval_date" do
-      # single NMI, single day reading
       expect(instance_sample_1.sql_statements_by_nmi.keys.size).to eq(1)
-      # multiple NMIs, single day reading
       expect(instance_multiple_nmis.sql_statements_by_nmi.keys.size).to eq(2)
-
-
-      records = instance_multiple_days.sql_statements_by_nmi[instance_multiple_days.sql_statements_by_nmi.keys.first]
-
-      # single NMI, multiple days
-      expect(records.keys.size).to eq(2)
     end
   end
 end

@@ -4,6 +4,8 @@ require 'pry-byebug'
 class MeterReader
   NMI_PATTERN = /^200,(?<nmi>\w+),\w+,(\w+)?,(?<nmi_suffix>\w+),(\w+)?,\w+,(?<current_consumption_unit>\w+),(?<interval_length>\d+),(\w+)?$/
 
+  attr_reader :sql_statements_by_nmi
+
   def initialize(filepath)
     @filepath = filepath
     @current_meter = {}
