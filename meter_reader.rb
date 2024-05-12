@@ -80,10 +80,10 @@ class MeterReader
 
   def merge_values_to_existing_statements(consumption_values, time)
     @sql_statements_by_nmi[current_nmi][time].map.with_index do |statement, index|
-      pattern = /,\s(\d+\.?\d*)/
-      inserted_value = statement.match(pattern)[1].to_f
+      meter_reading_pattern = /,\s(\d+\.?\d*)/
+      inserted_value = statement.match(meter_reading_pattern)[1].to_f
       new_value = inserted_value + consumption_values[index] # assumed that each repeated NMI data will have the same interval length
-      statement = statement.gsub(pattern, ", #{new_value}")
+      statement = statement.gsub(meter_reading_pattern, ", #{new_value}")
       statement
     end
   end
