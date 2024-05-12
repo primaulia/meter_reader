@@ -157,4 +157,23 @@ describe MeterReader do
       end
     end
   end
+
+  context "sample 6 (1 NMIs, multiple meter with multiple 300 records, 30 mins interval, 2 Wh meter readings, 20040809 to 20040812)" do
+    describe "#call" do
+      let(:instance) { described_class.new('fixtures/sample6.csv') }
+
+      it "should return 3 days worth insert statements" do
+        expect(instance.call.size).to eq(144)
+      end
+
+      it "should return meter readings across 3 days" do
+        statements = instance.call
+        first_timestamp = extract_timestamps_from_statement(statements.first)
+        last_timestamp = extract_timestamps_from_statement(statements.last)
+        expect(first_timestamp.to_s).to eq('2004-08-09')
+        expect(last_timestamp.to_s).to eq('2004-08-12')
+        expect((last_timestamp - first_timestamp).to_i).to eq(3)
+      end
+    end
+  end
 end
