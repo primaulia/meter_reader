@@ -1,11 +1,34 @@
-# Flo Energy Tech Interview Submission
+# Tech Challenge Submission
 
-## Facts on sample data
+This is a solution to [this challenge](https://docs.google.com/document/d/1eb8bW6h3ihlm_tngrZybCcdhDoH5z5wmMHoGtndDR3w/edit?usp=sharing). The solution was written in vanilla Ruby and tested with RSpec.
+
+## Assumptions
+
+- This solution will assume the data parsed will be in NEM12 format since the NEM13 format is for a scenario where the meter data is accumulated, which is irrelevant considering this solution assumed that the SQL stores individual meter readings records.
+- Since the sample data given is buggy, I've used the reference data file instead of the test data.
+- I assumed that the interval value unit that we stored in the DB will ** all be in kWh** since the given database schema doesn't provide additional info for the `consumption` value unit. If the data given is not in kWh, we'll ignore it. This assumption was made after my research that proves that the kWh is a measuring unit for the "active" consumption of electricity.
+- If the value given is in Wh or MWh, the solution will convert it to kWh format.
+- I assumed that the interval length is mandatory, based on the reference documentation
+- If the same NMI data has multiple export interval values and it was recorded on the same day, I assumed that the data will be summed together
+- If the 200 records provided import interval data (i.e. any NMI Suffix that's not `E1` or `E2`), I assumed that it's irrelevant data because it's not an active consumption data
+
+## Usage
+
+- I've provided some sample data in the `fixtures` folder in this repo. Please feel free to use it to test the solution. These sample data are all taken from the reference documentation.
+- I've also provided some rspec tests to validate my solution.
+- Practically this is how you will run the solution
+  ```
+  csv_file = File.read("sample.csv") # create or prepare this CSV file first
+  statements = MeterReader.new('fixtures/sample1.csv').call
+  p statements # to show the generated SQL statements
+  ```
+  
+## Facts based on the given sample data
 
 ### 100 record
 
 - This is a NEM12 data format
-- The file is created at 08/06/2005 11:49 AM by the participant "UNITEDDP" and the data is for "NEMMCO"
+- The file was created at 08/06/2005 11:49 AM by the participant "UNITEDDP" and the data is for "NEMMCO"
 
 ### 200 record
 
@@ -16,19 +39,13 @@
 
 ### 300 record
 
-- There are discrepancies on the data because it doesn't give 48 interval metering value. (`1440 / 30 mins interval = 48 values`)
-- The quality method, reason code and reason description is not given.
-- Assumed that these 300 records are invalid. Because the above pointers. However, assumed that the missing interval value is 0 somehow.
-- On the data sample given, on the line 9
-  `300,20050301,0,0,0,0,0,0,0,0,0,0,0,0,0.154,0.460,0.770,1.003,1.059,1.750,1.423,1.200,0 0050310121004,`.
-
-  It is assumed that the last column is supposed to be the `UpdateDateTime` but the DateTime format is wrong. It's supposed to be `20050310121004` instead, It's also missing the last column.
-
-  I've made an update to the sample data instead here (TODO).
+- There are discrepancies in the data because it doesn't give 48 interval metering values. (`1440 / 30 mins interval = 48 values`)
+- The quality method, reason code, and reason description are not given.
+- Assumed that these 300 records are invalid. Because of the above pointers, this submission will use a different sample data as per the [referred documentation](https://aemo.com.au/-/media/files/electricity/nem/retail_and_metering/market_settlement_and_transfer_solutions/2022/mdff-specification-nem12-nem13-v25.pdf?la=en) instead
 
 ### 400 record
 
-- There are no 400 record in this data.
+- There are no 400 records in this data.
 
 ### 500 record
 
@@ -37,13 +54,3 @@
 ### 900 record
 
 - This means the data is a complete set.
-
-## Assumptions
-
-- This solution will assume the data parsed will be in NEM12 format, since the NEM13 format is for a scenario where the meter data is accumulated, which is not relevant considering the SQL table is storing individual meter readings records.
-- Since the sample data given is buggy, I've used the data given in the reference file instead as test data.
-- I assumed that that the interval value unit that we're stored in the DB will all be in kWh since the given database schema doesn't provide additional info for the `consumption` value unit. If the data given is not in kWh, we'll ignore it. Also as I'm aware, the kWh is a unit that determines the "active" consumption of the electricity.
-- If the value given is in Wh or MWh, the solution will convert it to kWh format.
-- I assumed that the interval length is mandatory, based on the reference documentation
-- If the same NMI data has multiple export interval value and it was recorded on the same day, I assumed that the data will be summed together
-- If the 200 records provided an import interval data (i.e. NMI Suffix that's not `E1` or `E2`), I assumed that it's irrelevant data because it's not an active consumption data
