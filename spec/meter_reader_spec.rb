@@ -36,4 +36,26 @@ describe MeterReader do
       expect { instance.send(:prepare_timestamp, 'xxx') }.to raise_error(Date::Error)
     end
   end
+
+  describe "__process_nmi_record" do
+    let(:instance) { described_class.new('fixtures/sample1.csv') }
+
+    it "should derived the current meter state according the given line" do
+      valid_line = "200,VABD000163,E1Q1,1,E1,N1,METSER123,kWh,30,"
+      result = instance.send(:process_nmi_record, valid_line)
+
+      expect(result.keys).to match_array(%i[nmi unit interval_length nmi_suffix])
+      expect(result).to eq({
+        nmi: 'VABD000163',
+        unit: 'kwh',
+        interval_length: 30,
+        nmi_suffix: 'e1'
+      })
+    end
+
+    it "should raise ArgumentError if the line is invalid" do
+      invalid_line = "lorem ipsum"
+      expect { instance.send(:process_nmi_record, invalid_line) }.to raise_error(ArgumentError)
+    end
+  end
 end

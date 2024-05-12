@@ -33,7 +33,8 @@ class MeterReader
 
   def process_nmi_record(line)
     match_groups = line.match(NMI_PATTERN)
-    binding.pry if match_groups.nil?
+    raise ArgumentError, "NMI 200 record is invalid" if match_groups.nil?
+
     @current_meter = {
       nmi: match_groups[:nmi],
       unit: match_groups[:current_consumption_unit].downcase,
